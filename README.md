@@ -1,160 +1,96 @@
-# ComfyUI-Monja-CharacterVoice
+# ComfyUI-Monja-CharacterVoice (v1.0.2)
 
 Custom Character Voice nodes for ComfyUI.
 
-Monja Character Voice allows you to save and load reusable voice references for any character, making it easy to organize multiple voices and reference transcriptions for audio generation workflows.
+**Monja Character Voice** allows you to save and load reusable voice references for any character, making it easy to organize multiple voices and reference transcriptions for audio generation workflows.
 
 ---
 
-## Features
+## 🚀 Key Features
 
-- Save character voice references
-- Load character voice references
-- Store multiple voice references per character
-- Automatic character folder creation
-- Automatic storage inside the user's Documents folder
-- Save reference transcription
-- Load reference transcription
-- Compatible with ComfyUI audio workflows
-- Custom storage location through the `MONJA_CHARACTER_PATH` environment variable
+- **Dynamic Select Filtering (JS):** Choosing a character automatically updates the voice list to show only the voices belonging to that specific character. No more guesswork!
+- **Recursive Folder Scanning:** The system automatically scans the character's folder and all its subfolders (like `Voz` or `Referencia`) to find your `.wav` files.
+- **Persistent Storage:** Saves everything inside your user **Documents** folder for easy manual access and organization.
+- **F5-TTS Optimized:** The output `voice_pack` is pre-configured with the correct tags (`samples`, `text`, `ref_text`) to work instantly with the F5-TTS Engine and `tts_audio_suite`.
+- **Mono Conversion:** Automatically ensures reference audio is converted to Mono on load, preventing common cloning errors in AI models.
 
 ---
 
-## Installation
+## 📦 Installation
 
-Clone this repository into:
+1. Navigate to your ComfyUI `custom_nodes` folder.
+2. Clone the repository:
 
-```text
-ComfyUI/
-└── custom_nodes/
-    └── ComfyUI-Monja-CharacterVoice/
-```
+   ```bash
+   git clone https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice.git
+   ```
 
-or
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice.git
-```
-
-Restart ComfyUI after installation.
+3. Restart ComfyUI.
 
 ---
 
-## Requirements
+## 📂 Character Storage
 
-```text
-torch
-torchaudio
-```
-
----
-
-## Character Storage
-
-By default, Monja Character Voice stores all characters inside the user's Documents folder.
+By default, Monja Character Voice stores all characters inside the user's Documents folder:
 
 ```text
 Documents/
 └── MonjaCharacterVoice/
-    └── personagens/
+    └── characters/
+        ├── Character_Name/
+        │   ├── voice_01.wav
+        │   ├── voice_01.txt
+        │   └── [Optional Subfolders]/
 ```
 
-Each character has its own folder:
+Each character has its own folder. Files can be placed directly in the character's root folder or within subfolders — the recursive search will find them regardless.
+
+### Custom Storage Location
+
+If you prefer a different location, define the environment variable:
 
 ```text
-Documents/
-└── MonjaCharacterVoice/
-    └── personagens/
-        ├── Character1/
-        │   └── Voz/
-        │       └── Referencia/
-        │           ├── Principal.wav
-        │           └── Principal.txt
-        │
-        └── Character2/
-            └── Voz/
-                └── Referencia/
-                    ├── Voice01.wav
-                    └── Voice01.txt
+MONJA_CHARACTER_PATH=D:\Your\Custom\Path
 ```
-
-The folders are created automatically when the first voice is saved.
 
 ---
 
-## Custom Storage Location
-
-If you prefer another location, define the environment variable:
-
-```text
-MONJA_CHARACTER_PATH
-```
-
-Example:
-
-```text
-MONJA_CHARACTER_PATH=D:\AI\Characters
-```
-
-Monja Character Voice will use this folder instead of the default Documents location.
-
----
-
-## Nodes
+## 🛠️ Nodes
 
 ### Monja Character Voice • Save
 
-Saves:
+Saves reference audio and its transcription.
 
-- WAV reference audio
-- Reference transcription (.txt)
-
-Automatically creates the character folder if it does not exist.
-
----
+- `audio`: Input for the reference audio waveform.  
+- `character`: Name of the character (creates a folder).  
+- `voice_name`: Filename for this specific voice identity.  
+- `transcription`: The text spoken in the audio (essential for high-quality F5-TTS cloning).
 
 ### Monja Character Voice • Load
 
-Loads:
+Loads the saved voice for use in workflows.
 
-- Reference audio
-- Reference transcription
-- Voice Pack
+- `character`: Select the character from your library.  
+- `voice_name`: Select the specific voice (filtered automatically via JavaScript).  
 
-The available characters and voices are detected automatically from the storage folder.
-
----
-
-## Category
-
-```text
-Monja/Character Voice
-```
+**Outputs:** Provides the ComfyUI `AUDIO` format, the `ref_text` string, and the `voice_pack` dictionary compatible with F5-TTS.
 
 ---
 
-## Repository
+## 👤 Author
 
-https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice
+Andre Monjardim  
 
----
-
-## Author
-
-Andre Monjardim
-
-GitHub:
-
-https://github.com/andremonjardim
+- GitHub: [andremonjardim](https://github.com/andremonjardim)  
+- Repository: [ComfyUI-Monja-CharacterVoice](https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice)
 
 ---
 
-## License
+## 📜 License
 
-MIT License
+MIT License  
 
-Copyright (c) 2026 Andre Monjardim
+Copyright (c) 2026 Andre Monjardim  
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
