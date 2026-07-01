@@ -46,7 +46,7 @@ def get_documents_folder():
 
 BASE_PATH = os.getenv(
     "MONJA_CHARACTER_PATH",
-    str(get_documents_folder() / "MonjaCharacterVoice" / "personagens")
+    str(get_documents_folder() / "MonjaCharacterVoice" / "characters")
 )
 
 os.makedirs(BASE_PATH, exist_ok=True)
@@ -77,7 +77,7 @@ def list_voice_names(character=None):
     voices = []
 
     if character and character != "Nenhum":
-        ref_path = os.path.join(BASE_PATH, character, "Voz", "Referencia")
+        ref_path = os.path.join(BASE_PATH, character)
 
         if os.path.exists(ref_path):
             for name in os.listdir(ref_path):
@@ -119,12 +119,10 @@ class SaveCharacterVoice:
 
         if not voice_name:
             voice_name = "Principal"
-
+        
         voice_folder = os.path.join(
-            BASE_PATH,
-            character,
-            "Voz",
-            "Referencia"
+        	BASE_PATH,
+        	character
         )
 
         os.makedirs(voice_folder, exist_ok=True)
@@ -194,15 +192,17 @@ class LoadCharacterVoice:
 
     def load(self, character, voice_name):
         if character == "Nenhum":
-            raise ValueError(
-                "No character found. Please save a voice first."
-            )
+        	raise ValueError(
+        		f"No characters found.\n\n"
+        		f"Character folder:\n\n"
+        		f"{BASE_PATH}\n\n"
+        		f"Copy your characters to this folder or create a new one using "
+        		f"'Monja Character Voice • Save'."
+        	)
 
         ref_path = os.path.join(
-            BASE_PATH,
-            character,
-            "Voz",
-            "Referencia"
+        	BASE_PATH,
+        	character
         )
 
         wav_path = os.path.join(ref_path, f"{voice_name}.wav")
