@@ -10,17 +10,11 @@ from aiohttp import web
 # ============================================================
 # ComfyUI-Monja-CharacterVoice
 # Author: Andre Monjardim
-# Repository: https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice
-#
-# Copyright (c) 2026 Andre Monjardim
-# Licensed under the MIT License.
-# See the LICENSE file for details.
-# SPDX-License-Identifier: MIT
+# Version: 1.0.2
 # ============================================================
 
 __author__ = "Andre Monjardim"
 __version__ = "1.0.2"
-
 
 def get_documents_folder():
     try:
@@ -32,7 +26,6 @@ def get_documents_folder():
     except Exception:
         return Path.home()
 
-
 BASE_PATH = os.getenv(
     "MONJA_CHARACTER_PATH",
     str(get_documents_folder() / "MonjaCharacterVoice" / "characters")
@@ -40,6 +33,7 @@ BASE_PATH = os.getenv(
 
 os.makedirs(BASE_PATH, exist_ok=True)
 
+# Lógica de instalação de personagens de exemplo
 NODE_PATH = Path(__file__).parent
 EXAMPLE_CHARACTERS = NODE_PATH / "characters"
 
@@ -48,14 +42,6 @@ if EXAMPLE_CHARACTERS.exists():
         shutil.copytree(EXAMPLE_CHARACTERS, BASE_PATH, dirs_exist_ok=True)
         print(f"[Monja Character Voice] Example characters installed in:\n{BASE_PATH}")
 
-
-class AnyType(str):
-    def __ne__(self, __value: object) -> bool:
-        return False
-
-any_typ = AnyType("*")
-
-
 def list_characters():
     characters = ["Nenhum"]
     if os.path.exists(BASE_PATH):
@@ -63,7 +49,6 @@ def list_characters():
         if found:
             characters = sorted(found)
     return characters
-
 
 def list_voice_names(character=None):
     """VARRE A PASTA RECURSIVAMENTE BUSCANDO TODOS OS .WAV"""
@@ -81,16 +66,15 @@ def list_voice_names(character=None):
         voices.add("Principal")
     return sorted(list(voices))
 
-
 # API PARA O SELECT FILTRAR DINAMICAMENTE
 try:
-    @PromptServer.instance.routes.get("/monja/get_voices")
-    async def get_voices_api(request):
-        character = request.query.get("character", "Nenhum")
-        return web.json_response(list_voice_names(character))
+    if hasattr(PromptServer, "instance"):
+        @PromptServer.instance.routes.get("/monja/get_voices")
+        async def get_voices_api(request):
+            character = request.query.get("character", "Nenhum")
+            return web.json_response(list_voice_names(character))
 except Exception:
     pass
-
 
 class SaveCharacterVoice:
     @classmethod
@@ -135,13 +119,11 @@ class SaveCharacterVoice:
         print(f"[Monja Character Voice] Voice saved: {wav_path}")
         return (audio,)
 
-
 class LoadCharacterVoice:
     @classmethod
     def INPUT_TYPES(cls):
         characters = list_characters()
-        # CORREÇÃO: O servidor precisa da lista de TODAS as vozes da biblioteca para validar Daniel, Alice, etc.
-        # O JavaScript continua cuidando do filtro visual no navegador.
+        # O servidor precisa da lista global para validar a escolha do Daniel vs Alice
         all_voices_in_library = list_voice_names(None) 
 
         return {
@@ -151,7 +133,8 @@ class LoadCharacterVoice:
             }
         }
 
-    RETURN_TYPES = ("AUDIO", "STRING", any_typ)
+    # Definimos como VOICE (tipo padrão da tts_audio_suite) para o Manager reconhecer
+    RETURN_TYPES = ("AUDIO", "STRING", "VOICE")
     RETURN_NAMES = ("audio", "ref_text", "voice_pack")
     FUNCTION = "load"
     CATEGORY = "Monja/Character Voice"
@@ -186,11 +169,16 @@ class LoadCharacterVoice:
             "text": ref_text,
             "ref_text": ref_text,
             "audio_path": wav_path,
-            "reference_text": ref_text,
             "character_name": character,
         }
         return (audio_dict, ref_text, voice_pack)
 
+NODE_CLASS_MAPPINGS = {
+    "SaveCharacterVoice": SaveCharacterVoice,
+    "LoadCharacterVoice": LoadCharacterVoice
+}
 
-NODE_CLASS_MAPPINGS = {"SaveCharacterVoice": SaveCharacterVoice, "LoadCharacterVoice": LoadCharacterVoice}
-NODE_DISPLAY_NAME_MAPPINGS = {"SaveCharacterVoice": "Monja Character Voice • Save", "LoadCharacterVoice": "Monja Character Voice • Load"}
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "SaveCharacterVoice": "Monja Character Voice • Save",
+    "LoadCharacterVoice": "Monja Character Voice • Load"
+}
