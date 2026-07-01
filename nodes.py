@@ -6,14 +6,13 @@ import torch
 
 # ============================================================
 # ComfyUI-Monja-CharacterVoice
-#
 # Author: Andre Monjardim
-# GitHub: https://github.com/andremonjardim
-# Repository:
-# https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice
+# Repository: https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice
 #
 # Copyright (c) 2026 Andre Monjardim
 # Licensed under the MIT License.
+# See the LICENSE file for details.
+# SPDX-License-Identifier: MIT
 # ============================================================
 
 __author__ = "Andre Monjardim"
@@ -49,6 +48,7 @@ BASE_PATH = os.getenv(
     "MONJA_CHARACTER_PATH",
     str(get_documents_folder() / "MonjaCharacterVoice" / "personagens")
 )
+
 
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
@@ -98,7 +98,7 @@ class SaveCharacterVoice:
         return {
             "required": {
                 "audio": ("AUDIO",),
-                "character": ("STRING", {"default": "Yasmin"}),
+                "character": ("STRING", {"default": ""}),
                 "voice_name": ("STRING", {"default": "Principal"}),
                 "transcription": ("STRING", {"multiline": True, "default": ""}),
             }
@@ -110,6 +110,14 @@ class SaveCharacterVoice:
     CATEGORY = "Monja/Character Voice"
 
     def run(self, audio, character, voice_name, transcription):
+        character = character.strip()
+        voice_name = voice_name.strip()
+
+        if not character:
+            raise ValueError("Please enter a character name.")
+
+        if not voice_name:
+            voice_name = "Principal"
 
         voice_folder = os.path.join(
             BASE_PATH,
@@ -129,7 +137,7 @@ class SaveCharacterVoice:
             or "sample_rate" not in audio
         ):
             raise ValueError(
-                "Entrada de áudio inválida. Esperado tipo AUDIO do ComfyUI."
+                "Invalid audio input. Expected ComfyUI AUDIO type."
             )
 
         waveform = audio["waveform"]
@@ -140,7 +148,7 @@ class SaveCharacterVoice:
 
         if waveform.dim() != 2:
             raise ValueError(
-                f"Formato inesperado do waveform: {tuple(waveform.shape)}"
+                f"Unexpected waveform shape: {tuple(waveform.shape)}"
             )
 
         if waveform.shape[0] > 1:
@@ -156,7 +164,6 @@ class SaveCharacterVoice:
             f.write((transcription or "").strip())
 
         print(f"[Monja Character Voice] Voice saved: {wav_path}")
-
         return (audio,)
 
 
@@ -164,7 +171,6 @@ class LoadCharacterVoice:
 
     @classmethod
     def INPUT_TYPES(cls):
-
         characters = list_characters()
         default_character = next(
             (c for c in characters if c != "Nenhum"),
@@ -186,6 +192,10 @@ class LoadCharacterVoice:
     CATEGORY = "Monja/Character Voice"
 
     def load(self, character, voice_name):
+        if character == "Nenhum":
+            raise ValueError(
+                "No character found. Please save a voice first."
+            )
 
         ref_path = os.path.join(
             BASE_PATH,
@@ -199,7 +209,7 @@ class LoadCharacterVoice:
 
         if not os.path.exists(wav_path):
             raise FileNotFoundError(
-                f"Arquivo de voz não encontrado: {wav_path}"
+                f"Voice file not found: {wav_path}"
             )
 
         waveform, sample_rate = torchaudio.load(wav_path)
