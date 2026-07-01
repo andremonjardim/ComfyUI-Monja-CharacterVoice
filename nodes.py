@@ -10,7 +10,12 @@ from aiohttp import web
 # ============================================================
 # ComfyUI-Monja-CharacterVoice
 # Author: Andre Monjardim
-# Version: 1.0.2
+# Repository: https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice
+#
+# Copyright (c) 2026 Andre Monjardim
+# Licensed under the MIT License.
+# See the LICENSE file for details.
+# SPDX-License-Identifier: MIT
 # ============================================================
 
 __author__ = "Andre Monjardim"
@@ -33,7 +38,6 @@ BASE_PATH = os.getenv(
 
 os.makedirs(BASE_PATH, exist_ok=True)
 
-# Lógica de instalação de personagens de exemplo
 NODE_PATH = Path(__file__).parent
 EXAMPLE_CHARACTERS = NODE_PATH / "characters"
 
@@ -51,7 +55,6 @@ def list_characters():
     return characters
 
 def list_voice_names(character=None):
-    """VARRE A PASTA RECURSIVAMENTE BUSCANDO TODOS OS .WAV"""
     voices = set()
     search_path = BASE_PATH
     if character and character != "Nenhum":
@@ -68,7 +71,7 @@ def list_voice_names(character=None):
 
 # API PARA O SELECT FILTRAR DINAMICAMENTE
 try:
-    if hasattr(PromptServer, "instance"):
+    if hasattr(PromptServer, "instance") and PromptServer.instance:
         @PromptServer.instance.routes.get("/monja/get_voices")
         async def get_voices_api(request):
             character = request.query.get("character", "Nenhum")
@@ -123,7 +126,6 @@ class LoadCharacterVoice:
     @classmethod
     def INPUT_TYPES(cls):
         characters = list_characters()
-        # O servidor precisa da lista global para validar a escolha do Daniel vs Alice
         all_voices_in_library = list_voice_names(None) 
 
         return {
@@ -133,7 +135,6 @@ class LoadCharacterVoice:
             }
         }
 
-    # Definimos como VOICE (tipo padrão da tts_audio_suite) para o Manager reconhecer
     RETURN_TYPES = ("AUDIO", "STRING", "VOICE")
     RETURN_NAMES = ("audio", "ref_text", "voice_pack")
     FUNCTION = "load"
@@ -169,16 +170,17 @@ class LoadCharacterVoice:
             "text": ref_text,
             "ref_text": ref_text,
             "audio_path": wav_path,
+            "reference_text": ref_text,
             "character_name": character,
         }
         return (audio_dict, ref_text, voice_pack)
 
 NODE_CLASS_MAPPINGS = {
-    "SaveCharacterVoice": SaveCharacterVoice,
+    "SaveCharacterVoice": SaveCharacterVoice, 
     "LoadCharacterVoice": LoadCharacterVoice
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SaveCharacterVoice": "Monja Character Voice • Save",
+    "SaveCharacterVoice": "Monja Character Voice • Save", 
     "LoadCharacterVoice": "Monja Character Voice • Load"
 }
