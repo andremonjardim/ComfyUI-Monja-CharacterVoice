@@ -15,10 +15,10 @@ import torch
 # ============================================================
 
 __author__ = "Andre Monjardim"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 BASE_PATH = os.getenv(
-    "MONJARDIM_CHARACTER_PATH",
+    "MONJA_CHARACTER_PATH",
     r"C:\ComfyUI_Arquivos\personagens"
 )
 
@@ -128,7 +128,7 @@ class SaveCharacterVoice:
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write((transcription or "").strip())
 
-        print(f"[Monja] Voice saved: {wav_path}")
+        print(f"[Monja Character Voice] Voice saved: {wav_path}")
 
         return (audio,)
 
@@ -198,7 +198,7 @@ class LoadCharacterVoice:
             "character_name": character,
         }
 
-        print(f"[Monja] Character '{character}' loaded.")
+        print(f"[Monja Character Voice] Character '{character}' loaded.")
 
         return (
             audio_dict,
@@ -213,6 +213,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SaveCharacterVoice": "Monja - Save Character Voice",
-    "LoadCharacterVoice": "Monja - Load Character Voice",
+    "SaveCharacterVoice": "Monja Character Voice • Save",
+    "LoadCharacterVoice": "Monja Character Voice • Load",
 }
