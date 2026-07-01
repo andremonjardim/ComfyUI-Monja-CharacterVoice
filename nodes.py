@@ -3,6 +3,7 @@ import ctypes
 from pathlib import Path
 import torchaudio
 import torch
+import shutil
 
 # ============================================================
 # ComfyUI-Monja-CharacterVoice
@@ -50,6 +51,24 @@ BASE_PATH = os.getenv(
 )
 
 os.makedirs(BASE_PATH, exist_ok=True)
+
+NODE_PATH = Path(__file__).parent
+EXAMPLE_CHARACTERS = NODE_PATH / "characters"
+
+if EXAMPLE_CHARACTERS.exists():
+
+    if not any(Path(BASE_PATH).iterdir()):
+
+        shutil.copytree(
+            EXAMPLE_CHARACTERS,
+            BASE_PATH,
+            dirs_exist_ok=True
+        )
+
+        print(
+            f"[Monja Character Voice] Example characters installed in:\n{BASE_PATH}"
+        )
+
 
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
