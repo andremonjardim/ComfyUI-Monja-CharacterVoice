@@ -6,22 +6,31 @@ app.registerExtension({
         if (nodeData.name === "LoadCharacterVoice") {
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
-                onNodeCreated?.apply(this, arguments);
+                const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 
-                const charWidget = this.widgets.find(w => w.name === "character");
-                const voiceWidget = this.widgets.find(w => w.name === "voice_name");
+                // Espera 10ms para garantir que os widgets existam
+                setTimeout(() => {
+                    const charWidget = this.widgets?.find(w => w.name === "character");
+                    const voiceWidget = this.widgets?.find(w => w.name === "voice_name");
 
-                charWidget.callback = async () => {
-                    const response = await fetch(`/monja/get_voices?character=${encodeURIComponent(charWidget.value)}`);
-                    const voices = await response.json();
-                    
-                    voiceWidget.options.values = voices;
-                    if (!voices.includes(voiceWidget.value)) {
-                        voiceWidget.value = voices[0];
+                    if (charWidget && voiceWidget) {
+                        console.log("✅ [Monja JS] Nó detectado e configurado!");
+                        
+                        charWidget.callback = async () => {
+                            const resp = await fetch(`/monja/get_voices?character=${encodeURIComponent(charWidget.value)}`);
+                            if (resp.ok) {
+                                const voices = await resp.json();
+                                voiceWidget.options.values = voices;
+                                if (!voices.includes(voiceWidget.value)) {
+                                    voiceWidget.value = voices[0];
+                                }
+                            }
+                        };
+                        // Sincroniza ao criar
+                        charWidget.callback();
                     }
-                };
-                // Dispara uma vez ao criar o nó para popular o menu
-                charWidget.callback();
+                }, 10);
+                return r;
             };
         }
     }
