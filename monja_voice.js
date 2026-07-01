@@ -7,29 +7,35 @@ app.registerExtension({
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
-                
-                // Espera 10ms para garantir que os widgets existam
-                setTimeout(() => {
-                    const charWidget = this.widgets?.find(w => w.name === "character");
-                    const voiceWidget = this.widgets?.find(w => w.name === "voice_name");
 
-                    if (charWidget && voiceWidget) {
-                        console.log("✅ [Monja JS] Nó detectado e configurado!");
-                        
-                        charWidget.callback = async () => {
-                            const resp = await fetch(`/monja/get_voices?character=${encodeURIComponent(charWidget.value)}`);
-                            if (resp.ok) {
-                                const voices = await resp.json();
-                                voiceWidget.options.values = voices;
-                                if (!voices.includes(voiceWidget.value)) {
-                                    voiceWidget.value = voices[0];
-                                }
+                // Localiza os menus (widgets)
+                const charWidget = this.widgets.find(w => w.name === "character");
+                const voiceWidget = this.widgets.find(w => w.name === "voice_name");
+
+                if (charWidget && voiceWidget) {
+                    // Função que busca as vozes no servidor (Python)
+                    const updateVoices = async () => {
+                        const character = charWidget.value;
+                        const response = await fetch(`/monja/get_voices?character=${encodeURIComponent(character)}`);
+                        if (response.ok) {
+                            const voices = await response.json();
+                            
+                            // Atualiza a lista de opções do menu
+                            voiceWidget.options.values = voices;
+
+                            // SE A VOZ ATUAL NÃO PERTENCE AO PERSONAGEM NOVO, MUDA NA HORA
+                            if (!voices.includes(voiceWidget.value)) {
+                                voiceWidget.value = voices[0] || "Principal";
                             }
-                        };
-                        // Sincroniza ao criar
-                        charWidget.callback();
-                    }
-                }, 10);
+                        }
+                    };
+
+                    // Ativa a atualização sempre que você clicar no Personagem
+                    charWidget.callback = updateVoices;
+
+                    // Roda uma vez ao carregar o nó para garantir que comece certo
+                    setTimeout(updateVoices, 100);
+                }
                 return r;
             };
         }
