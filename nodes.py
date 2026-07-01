@@ -1,4 +1,6 @@
 import os
+import ctypes
+from pathlib import Path
 import torchaudio
 import torch
 
@@ -17,11 +19,36 @@ import torch
 __author__ = "Andre Monjardim"
 __version__ = "1.0.2"
 
+
+def get_documents_folder():
+    """
+    Retorna a pasta 'Documentos' do usuário utilizando a API do Windows.
+    Caso não seja possível obter o caminho, usa a pasta Home.
+    """
+    try:
+        CSIDL_PERSONAL = 5
+        SHGFP_TYPE_CURRENT = 0
+
+        buf = ctypes.create_unicode_buffer(260)
+
+        ctypes.windll.shell32.SHGetFolderPathW(
+            None,
+            CSIDL_PERSONAL,
+            None,
+            SHGFP_TYPE_CURRENT,
+            buf
+        )
+
+        return Path(buf.value)
+
+    except Exception:
+        return Path.home()
+
+
 BASE_PATH = os.getenv(
     "MONJA_CHARACTER_PATH",
-    r"C:\ComfyUI_Arquivos\personagens"
+    str(get_documents_folder() / "MonjaCharacterVoice" / "personagens")
 )
-
 
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
