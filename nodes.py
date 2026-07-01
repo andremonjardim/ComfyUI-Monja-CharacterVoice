@@ -4,6 +4,8 @@ from pathlib import Path
 import torchaudio
 import torch
 import shutil
+from server import PromptServer
+from aiohttp import web
 
 # ============================================================
 # ComfyUI-Monja-CharacterVoice
@@ -28,19 +30,9 @@ def get_documents_folder():
     try:
         CSIDL_PERSONAL = 5
         SHGFP_TYPE_CURRENT = 0
-
         buf = ctypes.create_unicode_buffer(260)
-
-        ctypes.windll.shell32.SHGetFolderPathW(
-            None,
-            CSIDL_PERSONAL,
-            None,
-            SHGFP_TYPE_CURRENT,
-            buf
-        )
-
+        ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
         return Path(buf.value)
-
     except Exception:
         return Path.home()
 
@@ -52,71 +44,45 @@ BASE_PATH = os.getenv(
 
 os.makedirs(BASE_PATH, exist_ok=True)
 
-NODE_PATH = Path(__file__).parent
-EXAMPLE_CHARACTERS = NODE_PATH / "characters"
+def list_characters():
+    characters = ["Nenhum"]
+    if os.path.exists(BASE_PATH):
+        found = [d for d in os.listdir(BASE_PATH) if os.path.isdir(os.path.join(BASE_PATH, d))]
+        if found:
+            characters = sorted(found)
+    return characters
 
-if EXAMPLE_CHARACTERS.exists():
 
-    if not any(Path(BASE_PATH).iterdir()):
+def list_voice_names(character=None):
+    """Varre a pasta do personagem e subpastas recursivamente por arquivos .wav"""
+    voices = set()
+    if character and character != "Nenhum":
+        char_path = os.path.join(BASE_PATH, character)
+        if os.path.exists(char_path):
+            for root, dirs, files in os.walk(char_path):
+                for name in files:
+                    if name.lower().endswith(".wav"):
+                        voices.add(os.path.splitext(name)[0])
+    if not voices:
+        voices.add("Principal")
+    return sorted(list(voices))
 
-        shutil.copytree(
-            EXAMPLE_CHARACTERS,
-            BASE_PATH,
-            dirs_exist_ok=True
-        )
 
-        print(
-            f"[Monja Character Voice] Example characters installed in:\n{BASE_PATH}"
-        )
+# API para o JavaScript atualizar o menu de vozes dinamicamente
+@PromptServer.instance.routes.get("/monja/get_voices")
+async def get_voices_api(request):
+    character = request.query.get("character", "Nenhum")
+    return web.json_response(list_voice_names(character))
 
 
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
         return False
 
-
 any_typ = AnyType("*")
 
 
-def list_characters():
-    characters = ["Nenhum"]
-
-    if os.path.exists(BASE_PATH):
-        found = [
-            d for d in os.listdir(BASE_PATH)
-            if os.path.isdir(os.path.join(BASE_PATH, d))
-        ]
-        if found:
-            characters = sorted(found)
-
-    return characters
-
-
-def list_voice_names(character=None):
-    """
-    VARRE A PASTA RECURSIVAMENTE BUSCANDO TODOS OS .WAV
-    """
-    voices = set()
-    search_path = BASE_PATH
-    
-    if character and character != "Nenhum":
-        search_path = os.path.join(BASE_PATH, character)
-
-    if os.path.exists(search_path):
-        # os.walk varre todas as subpastas (Voz, Referencia, etc)
-        for root, dirs, files in os.walk(search_path):
-            for name in files:
-                if name.lower().endswith(".wav"):
-                    voices.add(os.path.splitext(name)[0])
-
-    if not voices:
-        voices.add("Principal")
-
-    return sorted(list(voices))
-
-
 class SaveCharacterVoice:
-
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -136,31 +102,14 @@ class SaveCharacterVoice:
     def run(self, audio, character, voice_name, transcription):
         character = character.strip()
         voice_name = voice_name.strip()
-
         if not character:
             raise ValueError("Please enter a character name.")
-
-        if not voice_name:
-            voice_name = "Principal"
         
-        voice_folder = os.path.join(
-        	BASE_PATH,
-        	character
-        )
-
+        voice_folder = os.path.join(BASE_PATH, character)
         os.makedirs(voice_folder, exist_ok=True)
 
         wav_path = os.path.join(voice_folder, f"{voice_name}.wav")
         txt_path = os.path.join(voice_folder, f"{voice_name}.txt")
-
-        if (
-            not isinstance(audio, dict)
-            or "waveform" not in audio
-            or "sample_rate" not in audio
-        ):
-            raise ValueError(
-                "Invalid audio input. Expected ComfyUI AUDIO type."
-            )
 
         waveform = audio["waveform"]
         sample_rate = int(audio["sample_rate"])
@@ -168,19 +117,11 @@ class SaveCharacterVoice:
         if waveform.dim() == 3:
             waveform = waveform.squeeze(0)
 
-        if waveform.dim() != 2:
-            raise ValueError(
-                f"Unexpected waveform shape: {tuple(waveform.shape)}"
-            )
-
+        # Força Mono para compatibilidade com motores de clonagem
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
 
-        torchaudio.save(
-            wav_path,
-            waveform.cpu(),
-            sample_rate
-        )
+        torchaudio.save(wav_path, waveform.cpu(), sample_rate)
 
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write((transcription or "").strip())
@@ -190,18 +131,16 @@ class SaveCharacterVoice:
 
 
 class LoadCharacterVoice:
-
     @classmethod
     def INPUT_TYPES(cls):
         characters = list_characters()
-        
-        # Coleta TODAS as vozes encontradas na pasta BASE_PATH para o select
-        all_voices = list_voice_names()
+        # Inicializa com as vozes do primeiro personagem para popular o menu no arranque
+        initial_voices = list_voice_names(characters[0])
 
         return {
             "required": {
                 "character": (characters,),
-                "voice_name": (all_voices,),
+                "voice_name": (initial_voices,),
             }
         }
 
@@ -211,21 +150,11 @@ class LoadCharacterVoice:
     CATEGORY = "Monja/Character Voice"
 
     def load(self, character, voice_name):
-        if character == "Nenhum":
-        	raise ValueError(
-        		f"No characters found.\n\n"
-        		f"Character folder:\n\n"
-        		f"{BASE_PATH}\n\n"
-        		f"Copy your characters to this folder or create a new one using "
-        		f"'Monja Character Voice • Save'."
-        	)
-
         char_path = os.path.join(BASE_PATH, character)
-        
-        # Localiza o arquivo exato varrendo as subpastas
         wav_path = None
         txt_path = None
         
+        # Busca recursiva para encontrar o arquivo .wav selecionado
         for root, dirs, files in os.walk(char_path):
             target_wav = f"{voice_name}.wav"
             if target_wav in files:
@@ -234,12 +163,9 @@ class LoadCharacterVoice:
                 break
 
         if not wav_path or not os.path.exists(wav_path):
-            raise FileNotFoundError(
-                f"Voice file not found: {voice_name} in {char_path}"
-            )
+            raise FileNotFoundError(f"Voice file not found: {voice_name} in {char_path}")
 
         waveform, sample_rate = torchaudio.load(wav_path)
-
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
 
@@ -249,12 +175,11 @@ class LoadCharacterVoice:
         }
 
         ref_text = ""
-
         if os.path.exists(txt_path):
             with open(txt_path, "r", encoding="utf-8") as f:
                 ref_text = f.read().strip()
 
-        # Adicionado chaves extras para compatibilidade com outros nós
+        # Pacote compatível com F5-TTS e outros nós (adicionado 'samples' e 'text')
         voice_pack = {
             "audio": audio_dict,
             "samples": waveform,
@@ -266,13 +191,7 @@ class LoadCharacterVoice:
             "character_name": character,
         }
 
-        print(f"[Monja Character Voice] Character '{character}' loaded.")
-
-        return (
-            audio_dict,
-            ref_text,
-            voice_pack,
-        )
+        return (audio_dict, ref_text, voice_pack)
 
 
 NODE_CLASS_MAPPINGS = {
