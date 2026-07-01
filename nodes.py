@@ -49,6 +49,7 @@ BASE_PATH = os.getenv(
     str(get_documents_folder() / "MonjaCharacterVoice" / "personagens")
 )
 
+os.makedirs(BASE_PATH, exist_ok=True)
 
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
