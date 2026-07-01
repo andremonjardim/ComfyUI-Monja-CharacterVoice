@@ -10,4 +10,4 @@ Repository = "https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice"
 [tool.comfy]
 PublisherId = "monja"
 DisplayName = "Monja Character Voice"
-Icon = ""
+Icon = "https://raw.githubusercontent.com/andremonjardim/ComfyUI-Monja-CharacterVoice/main/icon.png"
