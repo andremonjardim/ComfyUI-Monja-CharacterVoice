@@ -140,11 +140,14 @@ class LoadCharacterVoice:
     @classmethod
     def INPUT_TYPES(cls):
         characters = list_characters()
-        initial_voices = list_voice_names(characters[0])
+        # CORREÇÃO: O servidor precisa da lista de TODAS as vozes da biblioteca para validar Daniel, Alice, etc.
+        # O JavaScript continua cuidando do filtro visual no navegador.
+        all_voices_in_library = list_voice_names(None) 
+
         return {
             "required": {
                 "character": (characters,),
-                "voice_name": (initial_voices,),
+                "voice_name": (all_voices_in_library,),
             }
         }
 
