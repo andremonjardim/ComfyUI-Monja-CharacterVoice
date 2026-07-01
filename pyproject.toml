@@ -1,0 +1,13 @@
+[project]
+name = "comfyui-monja-charactervoice"
+description = "Custom Character Voice nodes for ComfyUI."
+version = "1.0.0"
+license = { text = "MIT" }
+
+[project.urls]
+Repository = "https://github.com/andremonjardim/ComfyUI-Monja-CharacterVoice"
+
+[tool.comfy]
+PublisherId = "monja"
+DisplayName = "Monja Character Voice"
+Icon = ""
