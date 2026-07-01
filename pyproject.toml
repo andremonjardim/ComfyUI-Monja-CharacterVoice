@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-monja-charactervoice"
 description = "Custom Character Voice nodes for ComfyUI."
-version = "1.0.0"
+version = "1.0.2"
 license = { text = "MIT" }
 
 [project.urls]
