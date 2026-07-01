@@ -83,10 +83,13 @@ def list_voice_names(character=None):
 
 
 # API PARA O SELECT FILTRAR DINAMICAMENTE
-@PromptServer.instance.routes.get("/monja/get_voices")
-async def get_voices_api(request):
-    character = request.query.get("character", "Nenhum")
-    return web.json_response(list_voice_names(character))
+try:
+    @PromptServer.instance.routes.get("/monja/get_voices")
+    async def get_voices_api(request):
+        character = request.query.get("character", "Nenhum")
+        return web.json_response(list_voice_names(character))
+except Exception:
+    pass
 
 
 class SaveCharacterVoice:
